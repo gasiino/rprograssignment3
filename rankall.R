@@ -1,11 +1,6 @@
-#rankhospital("MD", "heart failure", 5)
-rankhospital <- function(state, outcome, num = "best") {
+rankall <- function(outcome, num = "best") {
     ## Read outcome data
     measures <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
-    
-    ## Check that state is valid
-    if(is.na(match(state,unique(measures[["State"]]))))
-        stop("invalid state")    
     
     ## Check that outcome is valid     
     if(is.na(match(outcome,c("heart attack", "heart failure", "pneumonia"))))
@@ -19,32 +14,40 @@ rankhospital <- function(state, outcome, num = "best") {
     
     ## filter only the rows related to the required state
     ## and the columns of the hospital name and death rate
-    textdata<-measures[measures["State"]==state,c("State","Hospital.Name",deathrate)]
+    textdata<-measures[,c("State","Hospital.Name",deathrate)]
     
     ## take the numerical value of the column
     data<-textdata[,c("State","Hospital.Name")]
     data[deathrate]<-suppressWarnings(as.numeric(textdata[[deathrate]]))
     data<-data[!is.na(data[deathrate]),]
     
-    n<-nrow(data)
-    
-    deathraterank<-rank(data[deathrate])
-    namerank<-rank(data[["Hospital.Name"]])/n/n
-    data["mainrank"]<-deathraterank+namerank
-    #data["order"]<-order(data[["mainrank"]])
-    data<-data[order(data[["mainrank"]]),]
-    data["order"]<-order(data[["mainrank"]])
-    
-    if(num=="best")
-        num <- 1
-    if(num=="worst")
-        num <- n
-    
-    if(num>=1 && num<=n) {
-        besthospital<-data[data["order"]==num,]
-        besthospital[["Hospital.Name"]]            
+    states<-data.frame()
+    for(s in sort(unique(data[["State"]])))
+    {
+        sdata<-data[data[["State"]]==s,]
+        n<-nrow(sdata)
+        
+        deathraterank<-rank(sdata[deathrate])
+        namerank<-rank(sdata[["Hospital.Name"]])/n/n
+        sdata["mainrank"]<-deathraterank+namerank
+        #data["order"]<-order(data[["mainrank"]])
+        sdata<-sdata[order(sdata[["mainrank"]]),]
+        sdata["order"]<-order(sdata[["mainrank"]])
+        
+        if(num=="best")
+            pick <- 1
+        else if(num=="worst")
+            pick <- n
+        else pick<-num
+        
+        if(pick>=1 & pick<=n) {
+            besthospital<-sdata[sdata["order"]==pick,]
+            result<-besthospital[["Hospital.Name"]]            
+        }
+        else
+            result<-NA
+        states<-rbind(states,data.frame(hospital=result, state=s))
     }
-    else
-        NA
+    states 
     
 }

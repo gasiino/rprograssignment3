@@ -27,12 +27,13 @@ best <- function(state, outcome) {
     ## and the columns of the hospital name and death rate
     textdata<-measures[measures["State"]==state,c("State","Hospital.Name",deathrate)]
     
-    ## take the numerical value of the column and put it in a new column Rate
-    data<-transform(textdata, Rate = suppressWarnings(as.numeric(textdata[[deathrate]])))
+    ## take the numerical value of the column
+    data<-textdata[,c("State","Hospital.Name")]
+    data[deathrate]<-suppressWarnings(as.numeric(textdata[[deathrate]]))
     
     ## get the best rate in the state (aggregate with the formula will omit the NAs )
-    bestrate<-aggregate(Rate~State,data,min)
-    
+    bestrate<-aggregate(as.formula(paste(deathrate,"State",sep="~")),data,min)
+        
     ## retrieve the rows which correspond to the best death rate
     besthospitals<-merge(bestrate,data)    
     
